@@ -51,6 +51,43 @@ st.dataframe(
 
 st.header("The mistakes of a rule")
 
+with st.sidebar:
+    st.header("Cost assumptions")
+
+    COST_TALK = st.number_input(
+        "Cost of one conversation in DKK",
+        min_value=0,
+        value=500,
+        step=100
+    )
+
+    COST_WORRY = st.number_input(
+        "Cost of worrying a student unnecessarily in DKK",
+        min_value=0,
+        value=2000,
+        step=500
+    )
+
+    COST_LEAVE = st.number_input(
+        "Cost when a student leaves in DKK",
+        min_value=0,
+        value=60000,
+        step=5000
+    )
+
+    HELPS = st.slider(
+        "Share of contacted students at risk who stay because of the conversation",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.30,
+        step=0.05
+    )
+
+    st.caption(
+        "These are assumptions and can be changed to see how the preferred number of conversations changes."
+    )
+
+
 number = st.slider(
     "Number of students to contact",
     min_value=1,
@@ -74,6 +111,44 @@ TN = ((val["left"] == 0) & (val["contacted"] == False)).sum()
 
 precision = TP / (TP + FP) if TP + FP > 0 else 0
 recall = TP / (TP + FN) if TP + FN > 0 else 0
+
+Talked = COST_TALK * (TP + FP)
+Worried = COST_WORRY * FP
+Left = (
+    COST_LEAVE * FN
+    + COST_LEAVE * TP * (1 - HELPS)
+)
+total_cost = Talked + Worried + Left
+
+st.markdown(
+    f"""
+    <div style="
+        position: fixed;
+        top: 5rem;
+        right: 2rem;
+        z-index: 9999;
+        background: white;
+        color: #111;
+        border: 1px solid #d9d9d9;
+        border-radius: 12px;
+        padding: 14px 18px;
+        min-width: 220px;
+        text-align: center;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14);
+    ">
+        <div style="font-size: 0.85rem; margin-bottom: 4px;">
+            Estimated total cost
+        </div>
+        <div style="font-size: 1.7rem; font-weight: 700;">
+            {total_cost:,.0f} DKK
+        </div>
+        <div style="font-size: 0.8rem; margin-top: 4px;">
+            {number} students contacted
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 c1, c2, c3, c4 = st.columns(4)
@@ -243,62 +318,4 @@ c2.metric(
 c3.metric(
     "Missed",
     international_results[2]
-)
-
-
-st.header("What does the rule cost?")
-
-
-COST_TALK = st.number_input(
-    "Cost of one conversation in DKK",
-    min_value=0,
-    value=500,
-    step=100
-)
-
-COST_WORRY = st.number_input(
-    "Cost of worrying a student unnecessarily in DKK",
-    min_value=0,
-    value=2000,
-    step=500
-)
-
-COST_LEAVE = st.number_input(
-    "Cost when a student leaves in DKK",
-    min_value=0,
-    value=60000,
-    step=5000
-)
-
-HELPS = st.slider(
-    "Share of contacted students at risk who stay because of the conversation",
-    min_value=0.0,
-    max_value=1.0,
-    value=0.30,
-    step=0.05
-)
-
-
-Talked = COST_TALK * (TP + FP)
-
-Worried = COST_WORRY * FP
-
-Left = (
-    COST_LEAVE * FN
-    + COST_LEAVE * TP * (1 - HELPS)
-)
-
-total_cost = Talked + Worried + Left
-
-
-st.metric(
-    "Estimated total cost",
-    f"{total_cost:,.0f} DKK"
-)
-
-
-st.caption(
-    "The cost calculation is based on assumptions. "
-    "The office should consider whether these values are reasonable "
-    "before using them for decisions."
 )
